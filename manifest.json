@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Pondr",
+  "version": "0.0.0",
+  "description": "Time finds you.",
+  "icons": {
+    "32": "assets/icons/pondr_32.png",
+    "48": "assets/icons/pondr_48.png",
+    "128": "assets/icons/pondr_128.png"
+  },
+
+  "action": {
+    "default_icon": "assets/icons/pondr_128.png",
+    "default_popup": "popup/popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "options_page": "options/options.html",
+  "permissions": ["tabs", "alarms", "storage", "notifications", "downloads"],
+  "web_accessible_resources": [
+    {
+      "resources": ["options/options.html"],
+      "matches": ["<all_urls>"],
+      "extension_ids": []
+    }
+  ]
+}

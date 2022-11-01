@@ -1,0 +1,34 @@
+@import url("https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@500;600;700&display=swap");
+body {
+  background: none;
+}
+.background {
+  background-color: rgb(57, 57, 57);
+  width: 200px;
+  border-style: none;
+}
+.btn {
+  border-style: none;
+}
+.img-size {
+  width: 30px; /* you can use % */
+  height: auto;
+}
+
+.row {
+  border-style: none;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.preset-buttons {
+  height: 50px;
+  width: 150px;
+  background-color: rgb(31, 122, 140);
+  color: rgb(255, 255, 255);
+  border-style: none;
+  border-radius: 20px;
+  font-family: "Darker Grotesque";
+  font-size: 22px;
+  font-weight: 700;
+}

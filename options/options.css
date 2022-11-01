@@ -1,0 +1,21 @@
+@import url("https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@500;600;700&display=swap");
+
+.logo-text {
+  font-family: "Darker Grotesque";
+  font-weight: 700;
+  font-size: 32px;
+}
+
+.nav-bar-select {
+  width: 45px;
+  height: 45px;
+  outline: none;
+}
+
+.nav-bar-selected {
+  outline: none;
+  border-bottom: 4px solid rgb(31, 122, 140);
+  margin-bottom: -1px;
+  width: 45px;
+  height: 45px;
+}
