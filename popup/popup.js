@@ -64,6 +64,7 @@ function pondrAway(timeSelection, units) {
 
     chrome.storage.sync.get("allTabsArray", function (result) {
       if (result.allTabsArray === undefined) {
+        
         //Getting and adding to current date by 1 minute
         const currentDate = new Date();
         var savedDate = dateAdd(
@@ -71,6 +72,7 @@ function pondrAway(timeSelection, units) {
           timeSelection,
           units
         ).toUTCString();
+
         var tabInformation = [activeTab.url, savedDate, activeTabId];
 
         tabArray[0] = tabInformation;
