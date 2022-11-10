@@ -48,7 +48,6 @@ document.addEventListener("DOMContentLoaded", function () {
 function pondrAway(timeSelection, units) {
   //Grabs the current tab
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-
     //Grab current tab info
     var tabArray = [];
     var activeTab = tabs[0];
@@ -56,42 +55,25 @@ function pondrAway(timeSelection, units) {
 
     //Grab array of all tabs from storage
     chrome.storage.sync.get("allTabsArray", function (result) {
-
+      //If the array is empty, will be undefined, so assign it to be empty instead
       if (result.allTabsArray === undefined) {
-        //Getting and adding to current date by 1 minute
-        const currentDate = new Date();
-        var savedDate = dateAdd(
-          currentDate,
-          timeSelection,
-          units
-        ).toUTCString();
-
-        var tabInformation = [activeTab.url, savedDate, activeTabId];
-
-        tabArray[0] = tabInformation;
-
-        chrome.storage.sync.set({ allTabsArray: tabArray });
-        //close the tab
-
-        chrome.tabs.remove(activeTabId, function () {});
-      } else {
-        const currentDate = new Date();
-        var savedDate = dateAdd(
-          currentDate,
-          timeSelection,
-          units
-        ).toUTCString();
-        var tabInformation = [activeTab.url, savedDate, timeSelection];
-
-        tabArray = result.allTabsArray;
-        tabArray.push(tabInformation);
-        chrome.storage.sync.set({ allTabsArray: tabArray });
-        //close the tab
-
-        chrome.tabs.remove(activeTabId, function () {});
+        result.allTabsArray = [];
       }
+      //Save and reformat date
+      const currentDate = new Date();
+      var savedDate = dateAdd(currentDate, timeSelection, units).toUTCString();
+      //Store url, date, and the time they wanted to be reminded again
+      var tabInformation = [activeTab.url, savedDate, timeSelection];
 
-      console.log("array: ", result.allTabsArray);
+      //Assign array of all tabs from memory into temp tabArray and store again
+      tabArray = result.allTabsArray;
+      tabArray.push(tabInformation);
+      chrome.storage.sync.set({ allTabsArray: tabArray });
+      
+      //Close the tab
+      chrome.tabs.remove(activeTabId, function () {});
+
+      //console.log("array: ", result.allTabsArray);
 
       //console.log("this is an array: ", array);
     });
