@@ -1,21 +1,9 @@
-// chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-//   console.log(
-//     sender.tab
-//       ? "from a content script:" + sender.tab.url
-//       : "from the extension"
-//   );
-//   if (request.greeting === "hey") {
-//     sendResponse({ farewell: "hey from bg" });
-//     var index = request.indexToPop;
-//     alert("YO, WANNA CHECK OUT SOME ARTICLES?");
-//   }
-// });
 document.addEventListener("DOMContentLoaded", function () {
   console.log("welcome to popup.js");
-
+  /*SETTING UP BUTTON LISTENERS ON POPUP PAGE */
+  /*Home/Library/Options pages */
   document.getElementById("home").addEventListener("click", function () {
     console.log("redirecting to home");
-    //window.location.href = "../options/home.html";
     chrome.tabs.create({ url: "../options/home.html" });
   });
 
@@ -23,7 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log("redirecting to library");
     chrome.tabs.create({ url: "../options/library.html" });
   });
-  
+
   document.getElementById("options").addEventListener("click", function () {
     console.log("redirecting to options");
     chrome.tabs.create({ url: "../options/options.html" });
@@ -35,16 +23,18 @@ document.addEventListener("DOMContentLoaded", function () {
     pondrAway(timeSelection, units);
     alert();
   });
-
+  /*Presets */
   document.getElementById("preset-1").addEventListener("click", function () {
     var timeSelection = "hour";
     var units = 3;
     pondrAway(timeSelection, units);
+    alert();
   });
 
   document.getElementById("preset-2").addEventListener("click", function () {
     var timeSelection = "day";
     pondrAway(timeSelection);
+    alert();
   });
 
   document.getElementById("preset-3").addEventListener("click", function () {
@@ -54,17 +44,20 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
+/*SlEEPS THE TAB */
 function pondrAway(timeSelection, units) {
+  //Grabs the current tab
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    // since only one tab should be active and in the current window at once
-    // the return variable should only have one entry
+
+    //Grab current tab info
     var tabArray = [];
     var activeTab = tabs[0];
     var activeTabId = activeTab.id;
 
+    //Grab array of all tabs from storage
     chrome.storage.sync.get("allTabsArray", function (result) {
+
       if (result.allTabsArray === undefined) {
-        
         //Getting and adding to current date by 1 minute
         const currentDate = new Date();
         var savedDate = dateAdd(
@@ -105,6 +98,7 @@ function pondrAway(timeSelection, units) {
   });
 }
 
+/*ALERT NOTIFICATION  */
 function alert() {
   chrome.notifications.create({
     type: "basic",
@@ -116,6 +110,7 @@ function alert() {
 }
 
 //**GOING TO HAVE TO MAKE CHANGES FOR  THIS FUNCTION AT SOME POINT */
+/*Right now it only ADDS time, we need to set time */
 /**
  * Adds time to a date. Modelled after MySQL DATE_ADD function.
  * Example: dateAdd(new Date(), 'minute', 30)  //returns 30 minutes from now.

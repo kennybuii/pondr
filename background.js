@@ -14,6 +14,7 @@ chrome.alarms.onAlarm.addListener((a) => {
     "Checking if there's anything to pop..." + currentDate.toUTCString()
   );
 
+  //need a flag to check if we've reminded once or not
   chrome.storage.sync.get("allTabsArray", function (result) {
     if (result.allTabsArray === undefined) {
       console.log("No current tabs to pop");
