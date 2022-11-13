@@ -8,78 +8,84 @@
     <title>Document</title>
 
     <!-- Latest compiled and minified CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../scripts/bs.css" rel="stylesheet">
 
     <link href="options.css" rel="stylesheet">
     <!-- Latest compiled JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js"></script>
+
 </head>
 
 <body>
+    <main>
+        <section>
 
-    <nav class="navbar navbar-expand-lg navbar-light">
-        <a class="navbar-brand logo-text ms-4" href="#">
-            <img src="../assets/icons/pondr_32.png" width="30" height="30" class="d-inline-block align-content-center"
-                alt="">
-            Pondr
-        </a> <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse m-0" id="navbarNav">
-            <ul class="navbar-nav mx-auto">
-                <li class="nav-item active me-5">
-                    <a href="home.html">
+            <nav class="navbar navbar-expand-lg navbar-light">
+                <a class="navbar-brand logo-text ms-4" href="#">
+                    <img src="../assets/icons/pondr_32.png" width="30" height="30"
+                        class="d-inline-block align-content-center" alt="">
+                    Pondr
+                </a> <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse m-0" id="navbarNav">
+                    <ul class="navbar-nav mx-auto">
+                        <li class="nav-item active me-5">
+                            <a href="home.html">
 
-                        <input type="image" href="home.html" src="../assets/icons/light-home.png"
-                            class="d-inline-block align-top nav-bar-select" alt="" />
-                    </a>
-                </li>
-                <li class="nav-item active">
-                    <a href="library.html">
+                                <input type="image" href="home.html" src="../assets/icons/light-home.png"
+                                    class="d-inline-block align-top nav-bar-select" alt="" />
+                            </a>
+                        </li>
+                        <li class="nav-item active">
+                            <a href="library.html">
 
-                        <input type="image" href="library.html" src="../assets/icons/light-library.png"
-                            class="d-inline-block align-top nav-bar-select" alt="" autofocus />
-                    </a>
-                </li>
-                <li class="nav-item active ms-5">
-                    <a href="options.html">
+                                <input type="image" href="library.html" src="../assets/icons/light-library.png"
+                                    class="d-inline-block align-top nav-bar-select" alt="" autofocus />
+                            </a>
+                        </li>
+                        <li class="nav-item active ms-5">
+                            <a href="options.html">
 
-                        <input type="image" href="options.html" src="../assets/icons/light-options.png"
-                            class="d-inline-block align-top nav-bar-selected" alt="" />
-                    </a>
-                </li>
+                                <input type="image" href="options.html" src="../assets/icons/light-options.png"
+                                    class="d-inline-block align-top nav-bar-selected" alt="" />
+                            </a>
+                        </li>
 
-            </ul>
-        </div>
+                    </ul>
+                </div>
 
-        <a class="navbar-brand logo-text me-4" href="#profile">
-            <img src="../assets/icons/profile-icon.png" class="d-inline-block align-content-center" alt="">
+                <a class="navbar-brand logo-text me-4" href="#profile">
+                    <img src="../assets/icons/profile-icon.png" class="d-inline-block align-content-center" alt="">
 
-        </a>
-    </nav>
+                </a>
+            </nav>
+
+        </section>
 
 
+        <div class="container">
+            <div class="row">
+                <div class="container">
 
-    <div class="container">
-        <div class="row">
-            <div class="container">
+                    <article id="tab_history">
+                        <ol id="tab">
 
-                <article id="tab_history">
-                    <ol id="tab">
+                        </ol>
 
-                    </ol>
+                    </article>
+                </div>
 
-                </article>
             </div>
 
         </div>
+        <button onClick="window.location.href=window.location.href" type="button" id="clear">
+            Clear
+        </button>
+    </main>
+    <!-- Javascript -->
 
-    </div>
-    <button onClick="window.location.href=window.location.href" type="button" id="clear">
-        Clear
-    </button>
-
+    <script src="../scripts/bs.js"></script>
     <script src="options.js"></script>
 </body>
 
