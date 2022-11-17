@@ -1,12 +1,25 @@
 {
   "manifest_version": 3,
   "name": "Pondr",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Time finds you.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxNaATNmhfpBjjZ3B4M8ptbX7fMqD8xfhiJzVA7W2MQvhxs6JvnQyge4R8CCXouZQnboXqS+joniraFGTucwCdCOuPSZcVJ4l+86Lz2XX55JhK5NKEXagyof1yDPMZdGtTjTmFGi1No23VkpUaMBFIcqYlI17BTmUt4NiRebEDKq/zkT6R83bESTbcbvF/95MwZibQgFohE37iEesplzDIuiW0bBVObRT/8bx3e3m9UTvT4iG6Lpup0AMZapOcvNt763lbUGIuB7r0tK1pQ5YaKbOnoPfhiVktH4ijTBlmm+mWXy9ACu61EZDXfuv7soGMEMNXPMkleNcTJNTBbgPtQIDAQAB",
   "icons": {
     "32": "assets/icons/pondr_32.png",
     "48": "assets/icons/pondr_48.png",
     "128": "assets/icons/pondr_128.png"
+  },
+  "oauth2": {
+    "client_id": "323470959846-sou29jd5946e1eql777opsd4e5a5mkk6.apps.googleusercontent.com",
+    "scopes":["profile", 
+    "https://www.googleapis.com/auth/contacts.readonly", 
+    "https://www.googleapis.com/auth/userinfo.profile",
+    "https://www.googleapis.com/auth/calendar",
+    "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar.events",
+    "https://www.googleapis.com/auth/calendar.events.readonly"
+
+  ]
   },
 
   "action": {
@@ -18,7 +31,8 @@
   },
 
   "options_page": "options/options.html",
-  "permissions": ["tabs", "alarms", "storage", "notifications", "downloads"],
+  "permissions": ["tabs", "alarms", "storage", "notifications", "downloads", "identity"],
+  "host_permissions": ["https://www.googleapis.com/calendar/v3/calendars/primary", "https://www.googleapis.com/*"],
   "web_accessible_resources": [
     {
       "resources": ["options/options.html"],
@@ -26,4 +40,5 @@
       "extension_ids": []
     }
   ]
+
 }

@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("options").addEventListener("click", function () {
     console.log("redirecting to options");
-    chrome.tabs.create({ url: "../options/options.html" });
+    chrome.tabs.create({ url: "./index.html" });
   });
 
   document.getElementById("in-a-minute").addEventListener("click", function () {
@@ -69,7 +69,7 @@ function pondrAway(timeSelection, units) {
       tabArray = result.allTabsArray;
       tabArray.push(tabInformation);
       chrome.storage.sync.set({ allTabsArray: tabArray });
-      
+
       //Close the tab
       chrome.tabs.remove(activeTabId, function () {});
 

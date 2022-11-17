@@ -1,3 +1,11 @@
+/**temp */
+chrome.action.onClicked.addListener(function () {
+  chrome.tabs.create({ url: "index.html" });
+});
+chrome.identity.getAuthToken({ interactive: true }, function (token) {
+  // Use the token.
+  console.log(token);
+});
 chrome.runtime.onInstalled.addListener(() => {
   console.log("welcome to background.js");
 
@@ -63,6 +71,7 @@ chrome.alarms.onAlarm.addListener((a) => {
 });
 
 async function alert() {
+  console.log("Alert getting created");
   var result = await getExpiredIndices();
   var numberOfExpiredTabs = result.expiredTabArray.length;
 
