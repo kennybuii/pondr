@@ -24,7 +24,7 @@ window.onload = function () {
         contentType: "json",
       };
 
-      //GET PRIMARY CALENDAR
+      //Get user's primary calendar
       async function getCalendarId() {
         return new Promise((resolve) => {
           fetch(
@@ -84,16 +84,60 @@ window.onload = function () {
       let d = DateTime.fromISO(dt.toISOString(), { zone: timezone });
       let GMTOffset = d.toFormat("ZZ");
 
-      var changeDate;
-      var date;
-      var startTime;
-      var endTime;
-      var timeWindowObj;
+      var date = {
+        value: currentDate,
+      };
+      var startTime = {
+        value: start,
+      };
+      var endTime = {
+        value: end,
+      };
 
-      var eventObj;
-      var eventRequest;
+      var timeWindowObj = {
+        timeMin: date.value + "T" + startTime.value + ":00" + GMTOffset,
+        timeMax: date.value + "T" + endTime.value + ":00" + GMTOffset,
+        items: [
+          {
+            id: calendarId,
+          },
+        ],
+        timeZone: timezone,
+      };
 
-      var busyOrNah;
+      //console.log(timeWindowObj);
+      var test = {
+        method: "POST",
+        async: true,
+        headers: {
+          Authorization: "Bearer " + token,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(timeWindowObj),
+      };
+
+      var eventObj = {
+        end: {
+          dateTime: date.value + "T" + endTime.value + ":00" + GMTOffset,
+          timeZone: timezone,
+        },
+        start: {
+          dateTime: date.value + "T" + startTime.value + ":00" + GMTOffset,
+          timeZone: timezone,
+        },
+        summary: "sample event",
+        description: "sample event description",
+      };
+
+      var options = {
+        method: "POST",
+        async: true,
+        headers: {
+          Authorization: "Bearer " + token,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(eventObj),
+      };
 
       //CREATE EVENT
       async function createEvent() {
@@ -102,7 +146,7 @@ window.onload = function () {
             "https://www.googleapis.com/calendar/v3/calendars/" +
               calendarId +
               "/events",
-            eventRequest
+            options
           )
             .then((response) => response.json()) // Transform the data into json
             .then(function (data) {
@@ -112,14 +156,12 @@ window.onload = function () {
             .catch((err) => console.log(err));
         });
       }
+      //console.log(eventObj);
 
       //CHECK CALENDAR
       async function checkCalendar() {
         return new Promise((resolve) => {
-          fetch(
-            "https://www.googleapis.com/calendar/v3/freeBusy",
-            checkBusyRequest
-          )
+          fetch("https://www.googleapis.com/calendar/v3/freeBusy", test)
             .then((response) => response.json()) // Transform the data into json
             .then(function (data) {
               console.log(data);
@@ -129,18 +171,20 @@ window.onload = function () {
             .catch((err) => console.log(err));
         });
       }
+      var busyOrNah = await checkCalendar();
+      var changeDate;
 
       function createCheckBusyRequest(date) {
         //Set up some data
 
         roundedDate = getRoundedDate(10, date);
-        console.log("ahead date %s", roundedDate);
         //This is the 30 minute window, startT and endT
         startT = roundedDate.toLocaleTimeString("en-US", {
           hour12: false,
           hour: "numeric",
           minute: "numeric",
         });
+
         endT = new Date(
           roundedDate.setMinutes(roundedDate.getMinutes() + 30)
         ).toLocaleTimeString("en-US", {
@@ -149,17 +193,18 @@ window.onload = function () {
           minute: "numeric",
         });
 
-        date = {
+        var date = {
           value: currentDate,
         };
-        startTime = {
+
+        var startTime = {
           value: startT,
         };
-        endTime = {
+        var endTime = {
           value: endT,
         };
-        //Create the time window object for the checkBusy request
-        timeWindowObj = {
+
+        var timeWindowObj = {
           timeMin: date.value + "T" + startTime.value + ":00" + GMTOffset,
           timeMax: date.value + "T" + endTime.value + ":00" + GMTOffset,
           items: [
@@ -171,7 +216,7 @@ window.onload = function () {
         };
         console.log("scanning");
         console.log(timeWindowObj);
-        var checkBusyRequest = {
+        var test = {
           method: "POST",
           async: true,
           headers: {
@@ -181,15 +226,19 @@ window.onload = function () {
           body: JSON.stringify(timeWindowObj),
         };
 
-        return [checkBusyRequest, startT];
+        return checkBusyRequest;
       }
 
-      function createEventRequest(date, startT) {
+      function createEventRequest(date) {
         //Set up some date data
 
         roundedDate = getRoundedDate(10, date);
         //This is the 15 minute event, startT and endT
-        startX = startT;
+        startT = roundedDate.toLocaleTimeString("en-US", {
+          hour12: false,
+          hour: "numeric",
+          minute: "numeric",
+        });
         endT = new Date(
           roundedDate.setMinutes(roundedDate.getMinutes() + 15)
         ).toLocaleTimeString("en-US", {
@@ -202,7 +251,7 @@ window.onload = function () {
           value: currentDate,
         };
         startTime = {
-          value: startX,
+          value: startT,
         };
         endTime = {
           value: endT,
@@ -236,25 +285,23 @@ window.onload = function () {
       }
 
       while (busyOrNah != 0) {
-        var i = 0;
-        console.log(i);
-        i++;
+        x = x + 10;
         changeDate = new Date();
         changeDate.setMinutes(changeDate.getMinutes() + x);
-        x = x + 10;
-        console.log("current date %s", changeDate);
 
-        var [checkBusyRequest, startT] = createCheckBusyRequest(changeDate);
+        var checkBusyRequest = createCheckBusyRequest(changeDate);
 
         busyOrNah = await checkCalendar();
         if (busyOrNah == 0) {
-          console.log("TEST");
-          console.log(timeWindowObj);
-          eventRequest = createEventRequest(changeDate, startT);
+          eventRequest = createEventRequest(changeDate);
           var create = await createEvent();
           console.log("breaking");
           break;
         }
+
+        // console.log("start %s", start);
+        // console.log("end %s", end);
+
         console.log("busy or nah: %d", busyOrNah);
       }
       console.log("escaped the matrics");
