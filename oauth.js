@@ -134,6 +134,7 @@ window.onload = function () {
         //Set up some data
 
         roundedDate = getRoundedDate(10, date);
+        console.log("ahead date %s", roundedDate);
         //This is the 30 minute window, startT and endT
         startT = roundedDate.toLocaleTimeString("en-US", {
           hour12: false,
@@ -180,19 +181,15 @@ window.onload = function () {
           body: JSON.stringify(timeWindowObj),
         };
 
-        return checkBusyRequest;
+        return [checkBusyRequest, startT];
       }
 
-      function createEventRequest(date) {
+      function createEventRequest(date, startT) {
         //Set up some date data
 
         roundedDate = getRoundedDate(10, date);
         //This is the 15 minute event, startT and endT
-        startT = roundedDate.toLocaleTimeString("en-US", {
-          hour12: false,
-          hour: "numeric",
-          minute: "numeric",
-        });
+        startX = startT;
         endT = new Date(
           roundedDate.setMinutes(roundedDate.getMinutes() + 15)
         ).toLocaleTimeString("en-US", {
@@ -205,7 +202,7 @@ window.onload = function () {
           value: currentDate,
         };
         startTime = {
-          value: startT,
+          value: startX,
         };
         endTime = {
           value: endT,
@@ -239,15 +236,21 @@ window.onload = function () {
       }
 
       while (busyOrNah != 0) {
-        x = x + 10;
+        var i = 0;
+        console.log(i);
+        i++;
         changeDate = new Date();
         changeDate.setMinutes(changeDate.getMinutes() + x);
+        x = x + 10;
+        console.log("current date %s", changeDate);
 
-        var checkBusyRequest = createCheckBusyRequest(changeDate);
+        var [checkBusyRequest, startT] = createCheckBusyRequest(changeDate);
 
         busyOrNah = await checkCalendar();
         if (busyOrNah == 0) {
-          eventRequest = createEventRequest(changeDate);
+          console.log("TEST");
+          console.log(timeWindowObj);
+          eventRequest = createEventRequest(changeDate, startT);
           var create = await createEvent();
           console.log("breaking");
           break;
