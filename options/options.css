@@ -28,9 +28,11 @@ h5,
 h6 {
   font-family: "Poppins";
 }
-
 p{
   font-family: "Poppins";
-  font-size: 30px;
   opacity: 75%;
+}
+
+.p-lead{
+  font-size: 30px;
 }
