@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Latest compiled and minified CSS -->
     <link href="../scripts/bs.css" rel="stylesheet">
-
+    <script src="../scripts/luxon.min.js"></script>
     <link href="popup.css" rel="stylesheet">
     <!-- Latest compiled JavaScript -->
 
@@ -19,9 +19,13 @@
 <body>
     <div class="container-fluid background ">
 
-
-
         <div class="row g-2">
+            <div class="col text-center">
+                <button type="button" id="gcal" class="preset-buttons">
+                    Auto
+                </button>
+            </div>
+
             <div class="col text-center">
                 <button type="button" id="in-a-minute" class="preset-buttons">
                     In a minute
@@ -32,18 +36,13 @@
                     Later today
                 </button>
             </div>
-
+    <!--  
             <div class="col text-center">
                 <button type="button" id="preset-2" class="preset-buttons">
                     Tomorrow
                 </button>
             </div>
-
-            <div class="col text-center">
-                <button type="button" id="preset-3" class="preset-buttons">
-                    This weekend
-                </button>
-            </div>
+    -->
 
 
         </div>
@@ -77,7 +76,7 @@
     </div>
 
     <!-- Javascript -->
-    <script src="bs.js"></script>
+    <script src="../scripts/bs.js"></script>
 
     <script src="popup.js"></script>
 </body>

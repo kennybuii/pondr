@@ -11,6 +11,8 @@ to the promises and not just the actual value */
 gap b/w events, solved by changing to searching next 15 minute intervals.
 also have to test what is an optimal buffer period b/w hitting button and booking event, is 15 minutes too short? too long? will have to change 
 the checkCalendar() function and request call*/
+
+//next goal: refactor this into first preset button in popup, when they hit that preset should create event and create notif
 window.onload = function () {
   document.querySelector("button").addEventListener("click", async function () {
     var calendarId;
