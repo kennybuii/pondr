@@ -31,11 +31,11 @@ document.addEventListener("DOMContentLoaded", function () {
     alert();
   });
 
-  document.getElementById("preset-2").addEventListener("click", function () {
-    var timeSelection = "day";
-    pondrAway(timeSelection);
-    alert();
-  });
+  // document.getElementById("preset-2").addEventListener("click", function () {
+  //   var timeSelection = "day";
+  //   pondrAway(timeSelection);
+  //   alert();
+  // });
 
   document.getElementById("gcal").addEventListener("click", function () {
     gcal();
