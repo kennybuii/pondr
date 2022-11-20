@@ -7,6 +7,10 @@ the settings for the type of CRUD call you want to make and the URL for the requ
 Instead they return promises, therefore we have to make sure to return the resolution
 to the promises and not just the actual value */
 
+/*Personal note: before we were searching for next 10 minute interval and slotting 15 minute event, times will not line up and create 5 minute 
+gap b/w events, solved by changing to searching next 15 minute intervals.
+also have to test what is an optimal buffer period b/w hitting button and booking event, is 15 minutes too short? too long? will have to change 
+the checkCalendar() function and request call*/
 window.onload = function () {
   document.querySelector("button").addEventListener("click", async function () {
     var calendarId;
@@ -114,6 +118,7 @@ window.onload = function () {
       }
 
       //CHECK CALENDAR
+
       async function checkCalendar() {
         return new Promise((resolve) => {
           fetch(
@@ -130,10 +135,9 @@ window.onload = function () {
         });
       }
 
+      /*This will scan through calendar and find soonest available time 10 minutes from now (rounded up) */
       function createCheckBusyRequest(date) {
-        //Set up some data
-
-        roundedDate = getRoundedDate(10, date);
+        roundedDate = getRoundedDate(15, date);
         console.log("ahead date %s", roundedDate);
         //This is the 30 minute window, startT and endT
         startT = roundedDate.toLocaleTimeString("en-US", {
@@ -183,11 +187,13 @@ window.onload = function () {
 
         return [checkBusyRequest, startT];
       }
+      //This will take the start time (10 minutes from now rounded up) and create a 15 minute event
+      //Not sure why events aren't stacked anymore
 
       function createEventRequest(date, startT) {
         //Set up some date data
 
-        roundedDate = getRoundedDate(10, date);
+        roundedDate = getRoundedDate(15, date);
         //This is the 15 minute event, startT and endT
         startX = startT;
         endT = new Date(
@@ -219,7 +225,7 @@ window.onload = function () {
             dateTime: date.value + "T" + startTime.value + ":00" + GMTOffset,
             timeZone: timezone,
           },
-          summary: "SDFADFASD",
+          summary: "Sample event",
           description: "sample event description",
         };
         console.log(eventObj);
