@@ -36,3 +36,20 @@ p{
 .p-lead{
   font-size: 30px;
 }
+
+.border{
+  border-style: solid;
+  border-color: black;
+}
+
+.bookmark-card{
+  width: 275px;
+  border-radius: 25%;
+  background: #eaeaea;
+  padding: 20px;
+  height: 150px;
+}
+
+button{
+  font-family: "Poppins";
+}
