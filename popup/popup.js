@@ -88,7 +88,19 @@ function alert() {
     priority: 0,
   });
 }
+//3 main functions: getCalendarId(), checkCalendar(), createEvent()
 
+/*CRUD calls are made via HTTP requests, using Fetch API. fetch() takes two parameters
+the settings for the type of CRUD call you want to make and the URL for the request*/
+
+/*Since fetch() calls are asynchronous, they won't return a value right away
+Instead they return promises, therefore we have to make sure to return the resolution
+to the promises and not just the actual value */
+
+/*Personal note: before we were searching for next 10 minute interval and slotting 15 minute event, times will not line up and create 5 minute 
+gap b/w events, solved by changing to searching next 15 minute intervals.
+also have to test what is an optimal buffer period b/w hitting button and booking event, is 15 minutes too short? too long? will have to change 
+the checkCalendar() function and request call*/
 function gcal() {
   var calendarId;
 
