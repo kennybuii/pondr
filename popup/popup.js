@@ -1,3 +1,6 @@
+import { TabInfo } from "../tabinfo.js";
+import { v4 as uuidv4 } from "../node_modules/uuid/dist/esm-browser/v4.js";
+
 document.addEventListener("DOMContentLoaded", function () {
   console.log("welcome to popup.js");
   /*SETTING UP BUTTON LISTENERS ON POPUP PAGE */
@@ -20,14 +23,17 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("in-a-minute").addEventListener("click", function () {
     var timeSelection = "minute";
     var units = 1;
-    pondrAway(timeSelection, units);
+    var isGcal = false;
+    pondrAway(timeSelection, units, isGcal);
     alert();
   });
   /*Presets */
   document.getElementById("preset-1").addEventListener("click", function () {
     var timeSelection = "hour";
     var units = 3;
-    pondrAway(timeSelection, units);
+    var isGcal = false;
+
+    pondrAway(timeSelection, units, isGcal);
     alert();
   });
 
@@ -38,12 +44,13 @@ document.addEventListener("DOMContentLoaded", function () {
   // });
 
   document.getElementById("gcal").addEventListener("click", function () {
+    var isGcal = true;
     gcal();
   });
 });
 
 /*SlEEPS THE TAB */
-function pondrAway(timeSelection, units) {
+function pondrAway(timeSelection, units, isGcal) {
   //Grabs the current tab
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     //Grab current tab info
@@ -57,19 +64,40 @@ function pondrAway(timeSelection, units) {
       if (result.allTabsArray === undefined) {
         result.allTabsArray = [];
       }
+
+      Date.now().toString();
       //Save and reformat date
       const currentDate = new Date();
       var savedDate = dateAdd(currentDate, timeSelection, units).toUTCString();
       //Store url, date, and the time they wanted to be reminded again
       var tabInformation = [activeTab.url, savedDate, timeSelection];
 
-      //Assign array of all tabs from memory into temp tabArray and store again
-      tabArray = result.allTabsArray;
-      tabArray.push(tabInformation);
-      chrome.storage.sync.set({ allTabsArray: tabArray });
+      //var uuid;
 
+      var uuid = uuidv4();
+
+      var tabInfo = new TabInfo(
+        uuid,
+        activeTab.url,
+        savedDate,
+        timeSelection,
+        false,
+        isGcal
+      );
+      console.log(tabInfo);
+      console.log(tabInfo.id);
+
+      //Assign array of all tabs from memory into temp tabArray and store again
+      // tabArray = result.allTabsArray;
+      // tabArray.push(tabInformation);
+      // chrome.storage.sync.set({ allTabsArray: tabArray });
+
+      /*NEW */
+      tabArray = result.allTabsArray;
+      tabArray.push(tabInfo);
+      chrome.storage.sync.set({ allTabsArray: tabArray });
       //Close the tab
-      chrome.tabs.remove(activeTabId, function () {});
+      // chrome.tabs.remove(activeTabId, function () {});
 
       //console.log("array: ", result.allTabsArray);
 
@@ -231,7 +259,7 @@ function gcal() {
         hour: "numeric",
         minute: "numeric",
       });
-      endT = new Date(
+      var endT = new Date(
         roundedDate.setMinutes(roundedDate.getMinutes() + 30)
       ).toLocaleTimeString("en-US", {
         hour12: false,
@@ -281,8 +309,8 @@ function gcal() {
 
       roundedDate = getRoundedDate(15, date);
       //This is the 15 minute event, startT and endT
-      startX = startT;
-      endT = new Date(
+      var startX = startT;
+      var endT = new Date(
         roundedDate.setMinutes(roundedDate.getMinutes() + 15)
       ).toLocaleTimeString("en-US", {
         hour12: false,
