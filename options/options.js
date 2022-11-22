@@ -5,14 +5,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
     for (var i = 0; i < result.allTabsArray.length; i++) {
       //grabbing website name
-      var urlName = result.allTabsArray[i][0];
+      var urlName = result.allTabsArray[i].tabUrl;
 
       var urlElement = document.createElement("option");
       urlElement.textContent = urlName;
       urlElement.value = urlName;
 
       //grabbing date associated with it + 1
-      var date = result.allTabsArray[i][1];
+      var date = result.allTabsArray[i].tabDate;
       console.log(date);
       urlElement.textContent += date;
 
@@ -36,5 +36,4 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   document.getElementById("clear").addEventListener("click", clear_history);
-
 });

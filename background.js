@@ -2,10 +2,11 @@
 chrome.action.onClicked.addListener(function () {
   chrome.tabs.create({ url: "index.html" });
 });
-chrome.identity.getAuthToken({ interactive: true }, function (token) {
-  // Use the token.
-  console.log(token);
-});
+
+// chrome.identity.getAuthToken({ interactive: true }, function (token) {
+//   // Use the token.
+//   console.log(token);
+// });
 chrome.runtime.onInstalled.addListener(() => {
   console.log("welcome to background.js");
 
@@ -32,18 +33,19 @@ chrome.alarms.onAlarm.addListener((a) => {
 
       for (var i = 0; i < result.allTabsArray.length; i++) {
         //grabbing website name
-        var urlName = result.allTabsArray[i][0];
+        var urlName = result.allTabsArray[i].tabUrl;
+        //console.log("TAB URL: %s", urlName);
 
         //grabbing date associated with it + 1
-        var storageDate = result.allTabsArray[i][1];
+        var storageDate = result.allTabsArray[i].tabDate;
 
         //get current time
         const currentDate = new Date().toUTCString();
 
         var x = Date.parse(currentDate);
         var y = Date.parse(storageDate);
-        console.log(currentDate);
-        console.log(storageDate);
+        // console.log(currentDate);
+        // console.log(storageDate);
         if (x > y) {
           console.log("Found an expired tab!");
           expiredTabIndices.push(i);
@@ -170,15 +172,19 @@ async function openTabsLater(expiredTabArray, allTabsArray) {
     //open the tabs
     for (var j = allTabsArrayLength; j >= 0; j--) {
       if (j === expiredTabArray[i]) {
-        console.log("Storing at %d", j);
-        //open tab
-        var currentDate = new Date();
+        if (allTabsArray[j].isGcal != true) {
+          console.log("Storing at %d", j);
+          //open tab
+          var currentDate = new Date();
 
-        var savedDate = dateAdd(currentDate, "hour", 3);
+          var savedDate = dateAdd(currentDate, "hour", 3);
 
-        allTabsArray[j][1] = savedDate.toUTCString();
+          allTabsArray[j].tabDate = savedDate.toUTCString();
 
-        chrome.storage.sync.set({ allTabsArray: allTabsArray });
+          chrome.storage.sync.set({ allTabsArray: allTabsArray });
+        } else {
+          //do something nefarious
+        }
       }
     }
 
@@ -201,7 +207,7 @@ async function openTabsNow(expiredTabArray, allTabsArray) {
       if (j === expiredTabArray[i]) {
         console.log("Popping at %d", j);
         //open tab
-        chrome.tabs.create({ url: allTabsArray[j][0] });
+        chrome.tabs.create({ url: allTabsArray[j].tabUrl });
         allTabsArray.splice(j, 1);
         chrome.storage.sync.set({ allTabsArray: allTabsArray });
       }

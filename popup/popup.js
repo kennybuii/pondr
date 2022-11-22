@@ -43,9 +43,11 @@ document.addEventListener("DOMContentLoaded", function () {
   //   alert();
   // });
 
-  document.getElementById("gcal").addEventListener("click", function () {
+  document.getElementById("gcal").addEventListener("click", async function () {
     var isGcal = true;
+    var timeSelection = "custom";
     gcal();
+    alert();
   });
 });
 
@@ -69,6 +71,7 @@ function pondrAway(timeSelection, units, isGcal) {
       //Save and reformat date
       const currentDate = new Date();
       var savedDate = dateAdd(currentDate, timeSelection, units).toUTCString();
+      console.log(savedDate);
       //Store url, date, and the time they wanted to be reminded again
       var tabInformation = [activeTab.url, savedDate, timeSelection];
 
@@ -84,8 +87,6 @@ function pondrAway(timeSelection, units, isGcal) {
         false,
         isGcal
       );
-      console.log(tabInfo);
-      console.log(tabInfo.id);
 
       //Assign array of all tabs from memory into temp tabArray and store again
       // tabArray = result.allTabsArray;
@@ -98,10 +99,53 @@ function pondrAway(timeSelection, units, isGcal) {
       chrome.storage.sync.set({ allTabsArray: tabArray });
       //Close the tab
       // chrome.tabs.remove(activeTabId, function () {});
+    });
+  });
+}
 
-      //console.log("array: ", result.allTabsArray);
+function pondrAwaySetTime(timeSelection, gcalDate, isGcal) {
+  //Grabs the current tab
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    //Grab current tab info
+    var tabArray = [];
+    var activeTab = tabs[0];
+    var activeTabId = activeTab.id;
 
-      //console.log("this is an array: ", array);
+    //Grab array of all tabs from storage
+    chrome.storage.sync.get("allTabsArray", function (result) {
+      //If the array is empty, will be undefined, so assign it to be empty instead
+      if (result.allTabsArray === undefined) {
+        result.allTabsArray = [];
+      }
+
+      Date.now().toString();
+      //Save and reformat date
+      var savedDate = gcalDate;
+
+      console.log("WEE WOOO");
+      console.log(activeTab.title);
+      console.log(savedDate);
+      //Store url, date, and the time they wanted to be reminded again
+      var tabInformation = [activeTab.url, savedDate, timeSelection];
+
+      //var uuid;
+
+      var uuid = uuidv4();
+
+      var tabInfo = new TabInfo(
+        uuid,
+        activeTab.url,
+        savedDate,
+        timeSelection,
+        false,
+        isGcal
+      );
+
+      tabArray = result.allTabsArray;
+      tabArray.push(tabInfo);
+      chrome.storage.sync.set({ allTabsArray: tabArray });
+      //Close the tab
+      // chrome.tabs.remove(activeTabId, function () {});
     });
   });
 }
@@ -129,8 +173,9 @@ to the promises and not just the actual value */
 gap b/w events, solved by changing to searching next 15 minute intervals.
 also have to test what is an optimal buffer period b/w hitting button and booking event, is 15 minutes too short? too long? will have to change 
 the checkCalendar() function and request call*/
-function gcal() {
+function gcal(timeSelection, gcalDate, isGcal) {
   var calendarId;
+  var reminderDate;
 
   //Chrome's Identity API let's us make an OAuth request
   chrome.identity.getAuthToken({ interactive: true }, async function (token) {
@@ -252,7 +297,7 @@ function gcal() {
     /*This will scan through calendar and find soonest available time 10 minutes from now (rounded up) */
     function createCheckBusyRequest(date) {
       roundedDate = getRoundedDate(15, date);
-      console.log("ahead date %s", roundedDate);
+
       //This is the 30 minute window, startT and endT
       startT = roundedDate.toLocaleTimeString("en-US", {
         hour12: false,
@@ -342,7 +387,9 @@ function gcal() {
         summary: "Sample event",
         description: "sample event description",
       };
-      console.log(eventObj);
+
+      reminderDate = new Date(eventObj.start.dateTime);
+
       var eventRequestX = {
         method: "POST",
         async: true,
@@ -352,7 +399,7 @@ function gcal() {
         },
         body: JSON.stringify(eventObj),
       };
-      return eventRequestX;
+      return [eventRequestX, reminderDate];
     }
 
     while (busyOrNah != 0) {
@@ -362,15 +409,14 @@ function gcal() {
       changeDate = new Date();
       changeDate.setMinutes(changeDate.getMinutes() + x);
       x = x + 10;
-      console.log("current date %s", changeDate);
 
       var [checkBusyRequest, startT] = createCheckBusyRequest(changeDate);
 
       busyOrNah = await checkCalendar();
       if (busyOrNah == 0) {
-        console.log("TEST");
         console.log(timeWindowObj);
-        eventRequest = createEventRequest(changeDate, startT);
+        [eventRequest, reminderDate] = createEventRequest(changeDate, startT);
+        //console.log(reminderDate);
         var create = await createEvent();
         console.log("breaking");
         break;
@@ -378,37 +424,8 @@ function gcal() {
       console.log("busy or nah: %d", busyOrNah);
     }
     console.log("escaped the matrics");
-
-    //READ FROM CALENDAR
-    //   await fetch(
-    //     "https://www.googleapis.com/calendar/v3/calendars/" +
-    //       calendarId +
-    //       "/events",
-    //     init
-    //   )
-    //     .then((response) => response.json()) // Transform the data into json
-    //     .then(async function (data) {
-    //       //get today to next week's events
-    //       for (var i = 0; i < data["items"].length; i++) {
-    //         //console.log(data["items"][i]);
-    //         if (data["items"][i]["end"] == undefined) {
-    //           console.log("found undefined");
-    //         } else {
-    //           //found a valid event
-    //         }
-    //       }
-    //     });
-
-    //WRITE TO CALENDAR
-    //   await fetch(
-    //     "https://www.googleapis.com/calendar/v3/calendars/" +
-    //       calendarId +
-    //       "/events",
-    //     options
-    //   )
-    //     .then((response) => response.json()) // Transform the data into json
-    //     .then((data) => console.log(data))
-    //     .catch((err) => console.log(err));
+    console.log(reminderDate);
+    pondrAwaySetTime(timeSelection, reminderDate.toUTCString(), isGcal);
   });
 }
 
