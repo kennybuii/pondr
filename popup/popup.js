@@ -44,12 +44,47 @@ document.addEventListener("DOMContentLoaded", function () {
   // });
 
   document.getElementById("gcal").addEventListener("click", async function () {
-    var isGcal = true;
-    var timeSelection = "custom";
-    gcal();
-    alert();
+    //chain();
+
+    //send taburl, tabtitle, and tabid then close
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      //Grab current tab info
+
+      var tabUrl = tabs[0].url;
+      var tabTitle = tabs[0].title;
+      var tabId = tabs[0].id;
+
+      let tabObject = {
+        tabUrl: tabUrl,
+        tabTitle: tabTitle,
+        tabId: tabId,
+      };
+      ping(JSON.stringify(tabObject));
+      chrome.tabs.remove(tabId, function () {});
+    });
   });
 });
+function ping(tabObject) {
+  chrome.runtime.sendMessage(tabObject, (response) => {
+    if (chrome.runtime.lastError) {
+      setTimeout(ping, 1000);
+    } else {
+      console.log("received");
+      console.log(response);
+    }
+  });
+}
+async function chain() {
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    //Grab current tab info
+
+    var tabUrl = tabs[0].url;
+    var tabTitle = tabs[0].title;
+    var tabId = tabs[0].id;
+    //gcal(tabUrl, tabTitle, tabId);
+    chrome.tabs.remove(tabId, function () {});
+  });
+}
 
 /*SlEEPS THE TAB */
 function pondrAway(timeSelection, units, isGcal) {
@@ -98,55 +133,49 @@ function pondrAway(timeSelection, units, isGcal) {
       tabArray.push(tabInfo);
       chrome.storage.sync.set({ allTabsArray: tabArray });
       //Close the tab
-      // chrome.tabs.remove(activeTabId, function () {});
+      chrome.tabs.remove(activeTabId, function () {});
     });
   });
 }
 
-function pondrAwaySetTime(timeSelection, gcalDate, isGcal) {
+function pondrAwaySetTime(gcalDate, tabUrl, tabId) {
   //Grabs the current tab
-  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    //Grab current tab info
-    var tabArray = [];
-    var activeTab = tabs[0];
-    var activeTabId = activeTab.id;
+  var isGcal = true;
+  var timeSelection = "custom";
 
-    //Grab array of all tabs from storage
-    chrome.storage.sync.get("allTabsArray", function (result) {
-      //If the array is empty, will be undefined, so assign it to be empty instead
-      if (result.allTabsArray === undefined) {
-        result.allTabsArray = [];
-      }
+  var tabArray = [];
 
-      Date.now().toString();
-      //Save and reformat date
-      var savedDate = gcalDate;
+  //Grab array of all tabs from storage
+  chrome.storage.sync.get("allTabsArray", function (result) {
+    //If the array is empty, will be undefined, so assign it to be empty instead
+    if (result.allTabsArray === undefined) {
+      result.allTabsArray = [];
+    }
 
-      console.log("WEE WOOO");
-      console.log(activeTab.title);
-      console.log(savedDate);
-      //Store url, date, and the time they wanted to be reminded again
-      var tabInformation = [activeTab.url, savedDate, timeSelection];
+    Date.now().toString();
+    //Save and reformat date
+    var savedDate = gcalDate;
 
-      //var uuid;
+    console.log("WEE WOOO");
 
-      var uuid = uuidv4();
+    console.log(savedDate);
+    //Store url, date, and the time they wanted to be reminded again
+    var uuid = uuidv4();
 
-      var tabInfo = new TabInfo(
-        uuid,
-        activeTab.url,
-        savedDate,
-        timeSelection,
-        false,
-        isGcal
-      );
+    var tabInfo = new TabInfo(
+      uuid,
+      tabUrl,
+      savedDate,
+      timeSelection,
+      false,
+      isGcal
+    );
 
-      tabArray = result.allTabsArray;
-      tabArray.push(tabInfo);
-      chrome.storage.sync.set({ allTabsArray: tabArray });
-      //Close the tab
-      // chrome.tabs.remove(activeTabId, function () {});
-    });
+    tabArray = result.allTabsArray;
+    tabArray.push(tabInfo);
+    chrome.storage.sync.set({ allTabsArray: tabArray });
+    //Close the tab
+    //chrome.tabs.remove(tabId, function () {});
   });
 }
 
@@ -155,7 +184,7 @@ function alert() {
   chrome.notifications.create({
     type: "basic",
     iconUrl: "../assets/icons/pondr_128.png",
-    title: "Tab closed",
+    title: "Tab queued",
     message: "We'll remind you at a later time.",
     priority: 0,
   });
@@ -173,7 +202,7 @@ to the promises and not just the actual value */
 gap b/w events, solved by changing to searching next 15 minute intervals.
 also have to test what is an optimal buffer period b/w hitting button and booking event, is 15 minutes too short? too long? will have to change 
 the checkCalendar() function and request call*/
-function gcal(timeSelection, gcalDate, isGcal) {
+function gcal(tabUrl, tabTitle, tabId) {
   var calendarId;
   var reminderDate;
 
@@ -384,8 +413,8 @@ function gcal(timeSelection, gcalDate, isGcal) {
           dateTime: date.value + "T" + startTime.value + ":00" + GMTOffset,
           timeZone: timezone,
         },
-        summary: "Sample event",
-        description: "sample event description",
+        summary: tabTitle,
+        description: tabUrl,
       };
 
       reminderDate = new Date(eventObj.start.dateTime);
@@ -424,8 +453,9 @@ function gcal(timeSelection, gcalDate, isGcal) {
       console.log("busy or nah: %d", busyOrNah);
     }
     console.log("escaped the matrics");
-    console.log(reminderDate);
-    pondrAwaySetTime(timeSelection, reminderDate.toUTCString(), isGcal);
+    //console.log(reminderDate);
+
+    //pondrAwaySetTime(reminderDate.toUTCString(), tabUrl, tabId);
   });
 }
 
