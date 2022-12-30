@@ -32,7 +32,7 @@
   },
 
   "options_page": "options/options.html",
-  "permissions": ["tabs", "alarms", "storage", "notifications", "downloads", "identity", "webRequest", "webNavigation"],
+  "permissions": ["unlimitedStorage", "tabs", "alarms", "storage", "notifications", "downloads", "identity", "webRequest", "webNavigation"],
   "host_permissions": ["https://www.googleapis.com/calendar/v3/calendars/primary", "https://www.googleapis.com/*"],
   "externally_connectable" : {
     "matches": [ "<all_urls>" ]

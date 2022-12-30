@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("options").addEventListener("click", function () {
     console.log("redirecting to options");
-    chrome.tabs.create({ url: "./index.html" });
+    chrome.tabs.create({ url: "./options.html" });
   });
 
   document.getElementById("in-a-minute").addEventListener("click", function () {
@@ -82,7 +82,7 @@ async function chain() {
     var tabTitle = tabs[0].title;
     var tabId = tabs[0].id;
     //gcal(tabUrl, tabTitle, tabId);
-    chrome.tabs.remove(tabId, function () {});
+    //chrome.tabs.remove(tabId, function () {});
   });
 }
 
@@ -94,9 +94,10 @@ function pondrAway(timeSelection, units, isGcal) {
     var tabArray = [];
     var activeTab = tabs[0];
     var activeTabId = activeTab.id;
+    var activeTabTitle = activeTab.title;
 
     //Grab array of all tabs from storage
-    chrome.storage.sync.get("allTabsArray", function (result) {
+    chrome.storage.local.get("allTabsArray", function (result) {
       //If the array is empty, will be undefined, so assign it to be empty instead
       if (result.allTabsArray === undefined) {
         result.allTabsArray = [];
@@ -120,18 +121,21 @@ function pondrAway(timeSelection, units, isGcal) {
         savedDate,
         timeSelection,
         false,
-        isGcal
+        isGcal,
+        activeTabTitle
       );
+      console.log("SDFSFASD");
+      console.log(tabInfo);
 
       //Assign array of all tabs from memory into temp tabArray and store again
       // tabArray = result.allTabsArray;
       // tabArray.push(tabInformation);
-      // chrome.storage.sync.set({ allTabsArray: tabArray });
+      // chrome.storage.local.set({ allTabsArray: tabArray });
 
       /*NEW */
       tabArray = result.allTabsArray;
       tabArray.push(tabInfo);
-      chrome.storage.sync.set({ allTabsArray: tabArray });
+      chrome.storage.local.set({ allTabsArray: tabArray });
       //Close the tab
       chrome.tabs.remove(activeTabId, function () {});
     });
@@ -146,7 +150,7 @@ function pondrAwaySetTime(gcalDate, tabUrl, tabId) {
   var tabArray = [];
 
   //Grab array of all tabs from storage
-  chrome.storage.sync.get("allTabsArray", function (result) {
+  chrome.storage.local.get("allTabsArray", function (result) {
     //If the array is empty, will be undefined, so assign it to be empty instead
     if (result.allTabsArray === undefined) {
       result.allTabsArray = [];
@@ -173,7 +177,7 @@ function pondrAwaySetTime(gcalDate, tabUrl, tabId) {
 
     tabArray = result.allTabsArray;
     tabArray.push(tabInfo);
-    chrome.storage.sync.set({ allTabsArray: tabArray });
+    chrome.storage.local.set({ allTabsArray: tabArray });
     //Close the tab
     //chrome.tabs.remove(tabId, function () {});
   });

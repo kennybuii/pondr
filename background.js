@@ -8,9 +8,6 @@ chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
 });
 
 var notificationArray = [];
-chrome.action.onClicked.addListener(function () {
-  chrome.tabs.create({ url: "index.html" });
-});
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log("welcome to background.js");
@@ -28,24 +25,28 @@ chrome.runtime.onConnect.addListener((port) => {
   });
 });
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   sendResponse("pong");
   var tabId = JSON.parse(request).tabId;
   var tabUrl = JSON.parse(request).tabUrl;
   var tabTitle = JSON.parse(request).tabTitle;
   console.log(JSON.parse(request));
-  gcal(tabUrl, tabTitle, tabId);
+  //Chrome's Identity API let's us make an OAuth request
+  chrome.identity.getAuthToken({ interactive: true }, async function (token) {
+    var ken = await gcal(tabUrl, tabTitle, token);
+    console.log(ken);
+  });
   //console.log(tabId + " " + tabUrl + " " + tabTitle);
 });
 
 chrome.alarms.onAlarm.addListener((a) => {
   const currentDate = new Date();
   console.log(
-    "Checking if there's anything to pop..." + currentDate.toUTCString()
+    "Checking if there's anything to pop..." + currentDate.toLocaleString()
   );
 
   //need a flag to check if we've reminded once or not
-  chrome.storage.sync.get("allTabsArray", function (result) {
+  chrome.storage.local.get("allTabsArray", function (result) {
     if (result.allTabsArray === undefined) {
       console.log("No current tabs to pop");
     } else {
@@ -83,7 +84,7 @@ chrome.alarms.onAlarm.addListener((a) => {
         //else if isCreated == false, alert and set it to true
         //store in storage
         console.log("Found %d index(es) to pop.", expiredTabIndices.length);
-        chrome.storage.sync.set({ expiredTabArray: expiredTabIndices });
+        chrome.storage.local.set({ expiredTabArray: expiredTabIndices });
 
         //After we found all indices (if any) associated to expired tabs, call alert()
         alert();
@@ -105,8 +106,10 @@ async function alert() {
   }
   for (var i = 0; i < notificationArray.length; i++) {
     chrome.notifications.clear(notificationArray[i]);
+    //console.log("cleared %s", notificationArray[i]);
   }
-
+  notificationArray = [];
+  //console.log(notificationArray);
   var msg = `Ta daa! Your tab(s) are ready.`;
   chrome.notifications.create(
     id,
@@ -131,7 +134,7 @@ async function alert() {
     function () {
       //console.log("CREATED!");
       notificationArray.push(id);
-      chrome.storage.sync.set({ notificationArray: notificationArray });
+      chrome.storage.local.set({ notificationArray: notificationArray });
     }
   );
 }
@@ -141,7 +144,7 @@ async function getNotificationArray() {
   async function getLocalStorageValue(key) {
     return new Promise((resolve, reject) => {
       try {
-        chrome.storage.sync.get(key, function (value) {
+        chrome.storage.local.get(key, function (value) {
           resolve(value);
         });
       } catch (ex) {
@@ -160,7 +163,7 @@ async function getExpiredIndices() {
   async function getLocalStorageValue(key) {
     return new Promise((resolve, reject) => {
       try {
-        chrome.storage.sync.get(key, function (value) {
+        chrome.storage.local.get(key, function (value) {
           resolve(value);
         });
       } catch (ex) {
@@ -177,7 +180,7 @@ async function getAllTabsArray() {
   async function getLocalStorageValue(key) {
     return new Promise((resolve, reject) => {
       try {
-        chrome.storage.sync.get(key, function (value) {
+        chrome.storage.local.get(key, function (value) {
           resolve(value);
         });
       } catch (ex) {
@@ -217,6 +220,7 @@ chrome.notifications.onButtonClicked.addListener(async function (
 async function openTabsLater(expiredTabArray, allTabsArray) {
   var expiredTabLength = expiredTabArray.length;
   var allTabsArrayLength = allTabsArray.length;
+  var test = "";
   for (var i = expiredTabLength; i >= 0; i--) {
     //open the tabs
     for (var j = allTabsArrayLength; j >= 0; j--) {
@@ -230,28 +234,37 @@ async function openTabsLater(expiredTabArray, allTabsArray) {
 
           allTabsArray[j].tabDate = savedDate.toUTCString();
 
-          chrome.storage.sync.set({ allTabsArray: allTabsArray });
+          chrome.storage.local.set({ allTabsArray: allTabsArray });
         } else if (allTabsArray[j].isGcal == true) {
-          //do something nefarious
+          //await delay(3000);
+          console.log("xDXDXDXD");
+          console.log(allTabsArray[j]);
           var id = allTabsArray[j].timeSelection;
-          console.log("THIS IS IDDDDDDD");
-          var test = base32.encode(new Buffer(id, "hex"));
-          console.log(id);
-          console.log(test);
+          var tabTitle, tabUrl;
+          allTabsArray.splice(j, 1);
+          chrome.storage.local.set({ allTabsArray: allTabsArray });
+
           chrome.identity.getAuthToken(
             { interactive: true },
             async function (token) {
-              delEvent(id);
+              //deleting event first? then retrieving? that doesnt make sense
+              await getEvent(id, token, (result) => {
+                console.log(result);
+              });
+              // console.log(tabTitle + " " + tabUrl);
+              // //PROBLEM IS HAPPENING HERE
+              // await gcal(tabUrl, tabTitle, token);
+              // await delEvent(id, token);
+              // //console.log(allTabsArray[j]);
+              // chrome.storage.local.set({ allTabsArray: allTabsArray });
             }
           );
-          //and call gcal again
         }
       }
     }
-
     expiredTabArray.splice(i, 1);
   }
-  chrome.storage.sync.set({ expiredTabArray: expiredTabArray });
+  chrome.storage.local.set({ expiredTabArray: expiredTabArray });
 
   var result = await getAllTabsArray();
   var result1 = await getExpiredIndices();
@@ -259,67 +272,70 @@ async function openTabsLater(expiredTabArray, allTabsArray) {
   console.log("After popping, expiresTabArray: ", result1.expiredTabArray);
 }
 
-// chrome.identity.getAuthToken({ interactive: true }, async function (token) {
-//   //Settings for GET request
-//   let init = {
-//     method: "GET",
-//     async: true,
-//     headers: {
-//       Authorization: "Bearer " + token,
-//       "Content-Type": "application/json",
-//     },
-//     contentType: "json",
-//   };
+async function getEvent(id, token, callback) {
+  var eventId = id;
 
-//   //GET PRIMARY CALENDAR
-//   async function getCalendarId() {
-//     return new Promise((resolve) => {
-//       fetch("https://www.googleapis.com/calendar/v3/calendars/primary", init)
-//         .then((response) => response.json()) // Transform the data into json
-//         .then(function (data) {
-//           console.log(data["id"]);
-//           var id = data["id"];
-//           resolve(id);
-//         })
-//         .catch((err) => console.log(err));
-//     });
-//   }
-//   //Wait until the function is done
-//   calendarId = await getCalendarId();
+  let getRequest = {
+    method: "GET",
+    async: true,
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json",
+    },
+    contentType: "json",
+  };
+
+  async function retrieve(eventId) {
+    return new Promise((resolve) => {
+      fetch(
+        "https://www.googleapis.com/calendar/v3/calendars/primary/events/" +
+          eventId,
+        getRequest
+      )
+        .then((response) => response.json()) // Transform the data into json
+        .then(function (data) {
+          var summary = data["summary"];
+          var description = data["description"];
+          resolve([summary, description]);
+        })
+        .catch((err) => console.log(err));
+    });
+  }
+  var result = await retrieve(eventId);
+  callback(result);
+}
 
 //DELETE EVENT
 //problem should arise in the request if anyhting
 //also fix weird bug with night time event
-function delEvent(id) {
+async function delEvent(id, token) {
   var eventId = id;
 
-  chrome.identity.getAuthToken({ interactive: true }, async function (token) {
-    let deleteRequest = {
-      method: "DELETE",
-      async: true,
-      headers: {
-        Authorization: "Bearer " + token,
-        "Content-Type": "application/json",
-      },
-      contentType: "json",
-    };
-    async function deleteEvent(eventId) {
-      return new Promise((resolve) => {
-        fetch(
-          "https://www.googleapis.com/calendar/v3/calendars/primary/events/" +
-            eventId,
-          deleteRequest
-        )
-          .then((response) => response.json()) // Transform the data into json
-          .then(function (data) {
-            console.log(data);
-            resolve(data);
-          })
-          .catch((err) => console.log(err));
-      });
-    }
-    deleteEvent(eventId);
-  });
+  let deleteRequest = {
+    method: "DELETE",
+    async: true,
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json",
+    },
+    contentType: "json",
+  };
+  async function deleteEvent(eventId) {
+    return new Promise((resolve) => {
+      fetch(
+        "https://www.googleapis.com/calendar/v3/calendars/primary/events/" +
+          eventId,
+        deleteRequest
+      )
+        .then((response) => response.json()) // Transform the data into json
+        .then(function (data) {
+          console.log("DELETED!!!!!!!!!!!!!!!!!!");
+          resolve(data);
+        })
+        .catch((err) => console.log(err));
+    });
+  }
+  await deleteEvent(eventId);
 }
 async function openTabsNow(expiredTabArray, allTabsArray) {
   var expiredTabLength = expiredTabArray.length;
@@ -332,13 +348,13 @@ async function openTabsNow(expiredTabArray, allTabsArray) {
         //open tab
         chrome.tabs.create({ url: allTabsArray[j].tabUrl });
         allTabsArray.splice(j, 1);
-        chrome.storage.sync.set({ allTabsArray: allTabsArray });
+        chrome.storage.local.set({ allTabsArray: allTabsArray });
       }
     }
 
     expiredTabArray.splice(i, 1);
   }
-  chrome.storage.sync.set({ expiredTabArray: expiredTabArray });
+  chrome.storage.local.set({ expiredTabArray: expiredTabArray });
 
   var result = await getAllTabsArray();
   var result1 = await getExpiredIndices();
@@ -409,66 +425,137 @@ to the promises and not just the actual value */
 gap b/w events, solved by changing to searching next 15 minute intervals.
 also have to test what is an optimal buffer period b/w hitting button and booking event, is 15 minutes too short? too long? will have to change 
 the checkCalendar() function and request call*/
-function gcal(tabUrl, tabTitle, tabId) {
+async function gcal(tabUrl, tabTitle, token) {
+  await delay(3000);
   var calendarId;
   var reminderDate;
 
-  //Chrome's Identity API let's us make an OAuth request
-  chrome.identity.getAuthToken({ interactive: true }, async function (token) {
-    //Settings for GET request
-    let init = {
-      method: "GET",
-      async: true,
-      headers: {
-        Authorization: "Bearer " + token,
-        "Content-Type": "application/json",
-      },
-      contentType: "json",
-    };
+  //Settings for GET request
+  let init = {
+    method: "GET",
+    async: true,
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json",
+    },
+    contentType: "json",
+  };
 
-    //GET PRIMARY CALENDAR
-    async function getCalendarId() {
-      return new Promise((resolve) => {
-        fetch("https://www.googleapis.com/calendar/v3/calendars/primary", init)
-          .then((response) => response.json()) // Transform the data into json
-          .then(function (data) {
-            console.log(data["id"]);
-            var id = data["id"];
-            resolve(id);
-          })
-          .catch((err) => console.log(err));
-      });
-    }
-    //Wait until the function is done
-    calendarId = await getCalendarId();
+  //GET PRIMARY CALENDAR
+  async function getCalendarId() {
+    return new Promise((resolve) => {
+      fetch("https://www.googleapis.com/calendar/v3/calendars/primary", init)
+        .then((response) => response.json()) // Transform the data into json
+        .then(function (data) {
+          var id = data["id"];
+          resolve(id);
+        })
+        .catch((err) => console.log(err));
+    });
+  }
+  //Wait until the function is done
+  calendarId = await getCalendarId();
 
-    //Computed variable to get the ceiling time of a date
-    let getRoundedDate = (minutes, d = new Date()) => {
-      let ms = 1000 * 60 * minutes; // convert minutes to ms
-      let roundedDate = new Date(Math.ceil(d.getTime() / ms) * ms);
+  //Computed variable to get the ceiling time of a date
+  let getRoundedDate = (minutes, d = new Date()) => {
+    let ms = 1000 * 60 * minutes; // convert minutes to ms
+    let roundedDate = new Date(Math.ceil(d.getTime() / ms) * ms);
 
-      return roundedDate;
-    };
-    //Round the date to the nearest next 10 minutes
-    var x = 10;
-    var roundedDate = getRoundedDate(x);
+    return roundedDate;
+  };
+  //Round the date to the nearest next 10 minutes
+  var x = 10;
+  var roundedDate = getRoundedDate(x);
 
-    //Get current date
-    var dateObj = new Date();
-    var month = dateObj.getMonth() + 1; //months from 1-12
-    var day = dateObj.getDate();
-    console.log(day);
-    var year = dateObj.getFullYear();
-    var currentDate = year + "-" + month + "-" + day;
+  //Get current date
+  var dateObj = new Date();
+  var month = dateObj.getMonth() + 1; //months from 1-12
+  var day = dateObj.getDate();
 
-    /*We use Google's checkBusy API to check a current timeslot, therefore we need the start and end of that time block */
-    var start = roundedDate.toLocaleTimeString("en-US", {
+  var year = dateObj.getFullYear();
+  var currentDate = year + "-" + month + "-" + day;
+
+  /*We use Google's checkBusy API to check a current timeslot, therefore we need the start and end of that time block */
+  var start = roundedDate.toLocaleTimeString("en-US", {
+    hour12: false,
+    hour: "numeric",
+    minute: "numeric",
+  });
+
+  var end = new Date(
+    roundedDate.setMinutes(roundedDate.getMinutes() + 30)
+  ).toLocaleTimeString("en-US", {
+    hour12: false,
+    hour: "numeric",
+    minute: "numeric",
+  });
+
+  //Get current timezone
+  let timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  //Get GMT difference
+  var DateTime = luxon.DateTime;
+  const dt = new Date();
+  let d = DateTime.fromISO(dt.toISOString(), { zone: timezone });
+  let GMTOffset = d.toFormat("ZZ");
+
+  var changeDate;
+  var date;
+  var startTime;
+  var endTime;
+  var timeWindowObj;
+
+  var eventObj;
+  var eventRequest;
+
+  var busyOrNah;
+
+  //CREATE EVENT
+  async function createEvent() {
+    return new Promise((resolve) => {
+      fetch(
+        "https://www.googleapis.com/calendar/v3/calendars/" +
+          calendarId +
+          "/events",
+        eventRequest
+      )
+        .then((response) => response.json()) // Transform the data into json
+        .then(function (data) {
+          console.log(data);
+          console.log(eventRequest);
+          resolve(data);
+        })
+        .catch((err) => console.log(err));
+    });
+  }
+
+  //CHECK CALENDAR
+
+  async function checkCalendar() {
+    return new Promise((resolve) => {
+      fetch("https://www.googleapis.com/calendar/v3/freeBusy", checkBusyRequest)
+        .then((response) => response.json()) // Transform the data into json
+        .then(function (data) {
+          console.log(data);
+          console.log(checkBusyRequest);
+          var busy = data["calendars"][calendarId]["busy"].length;
+          resolve(busy);
+        })
+        .catch((err) => console.log(err));
+    });
+  }
+
+  /*This will scan through calendar and find soonest available time 10 minutes from now (rounded up) */
+  function createCheckBusyRequest(date) {
+    roundedDate = getRoundedDate(15, date);
+
+    //This is the 30 minute window, startT and endT
+    startT = roundedDate.toLocaleTimeString("en-US", {
       hour12: false,
       hour: "numeric",
       minute: "numeric",
     });
-
-    var end = new Date(
+    var endT = new Date(
       roundedDate.setMinutes(roundedDate.getMinutes() + 30)
     ).toLocaleTimeString("en-US", {
       hour12: false,
@@ -476,224 +563,163 @@ function gcal(tabUrl, tabTitle, tabId) {
       minute: "numeric",
     });
 
-    //Get current timezone
-    let timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    var today = date.getHours();
 
-    //Get GMT difference
-    var DateTime = luxon.DateTime;
-    const dt = new Date();
-    let d = DateTime.fromISO(dt.toISOString(), { zone: timezone });
-    let GMTOffset = d.toFormat("ZZ");
+    if (today < 9) {
+      startT = "09:00";
+      endT = "09:30";
+    }
+    console.log(today);
+    //EXPERIMENTAL
+    if (today > 21) {
+      startT = "09:00";
+      endT = "09:30";
+      dateObj = new Date();
+      month = dateObj.getMonth() + 1; //months from 1-12
+      day = dateObj.getDate() + 1;
 
-    var changeDate;
-    var date;
-    var startTime;
-    var endTime;
-    var timeWindowObj;
-
-    var eventObj;
-    var eventRequest;
-
-    var busyOrNah;
-
-    //CREATE EVENT
-    async function createEvent() {
-      return new Promise((resolve) => {
-        fetch(
-          "https://www.googleapis.com/calendar/v3/calendars/" +
-            calendarId +
-            "/events",
-          eventRequest
-        )
-          .then((response) => response.json()) // Transform the data into json
-          .then(function (data) {
-            console.log(data);
-            console.log(eventRequest);
-            resolve(data);
-          })
-          .catch((err) => console.log(err));
-      });
+      year = dateObj.getFullYear();
+      currentDate = year + "-" + month + "-" + day;
     }
 
-    //CHECK CALENDAR
+    date = {
+      value: currentDate,
+    };
+    startTime = {
+      value: startT,
+    };
+    endTime = {
+      value: endT,
+    };
 
-    async function checkCalendar() {
-      return new Promise((resolve) => {
-        fetch(
-          "https://www.googleapis.com/calendar/v3/freeBusy",
-          checkBusyRequest
-        )
-          .then((response) => response.json()) // Transform the data into json
-          .then(function (data) {
-            console.log(data);
-            console.log(checkBusyRequest);
-            var busy = data["calendars"][calendarId]["busy"].length;
-            resolve(busy);
-          })
-          .catch((err) => console.log(err));
-      });
+    //Create the time window object for the checkBusy request
+    timeWindowObj = {
+      timeMin: date.value + "T" + startTime.value + ":00" + GMTOffset,
+      timeMax: date.value + "T" + endTime.value + ":00" + GMTOffset,
+      items: [
+        {
+          id: calendarId,
+        },
+      ],
+      timeZone: timezone,
+    };
+    console.log("scanning");
+    console.log(timeWindowObj);
+    var checkBusyRequest = {
+      method: "POST",
+      async: true,
+      headers: {
+        Authorization: "Bearer " + token,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(timeWindowObj),
+    };
+
+    return [checkBusyRequest, startT];
+  }
+  //This will take the start time (10 minutes from now rounded up) and create a 15 minute event
+  //Not sure why events aren't stacked anymore
+
+  function createEventRequest(date, startT) {
+    //Set up some date data
+    var today = date.getHours();
+    roundedDate = getRoundedDate(15, date);
+    //This is the 15 minute event, startT and endT
+    var startX = startT;
+
+    var endT = new Date(
+      roundedDate.setMinutes(roundedDate.getMinutes() + 15)
+    ).toLocaleTimeString("en-US", {
+      hour12: false,
+      hour: "numeric",
+      minute: "numeric",
+    });
+
+    if (date.getHours() < 9) {
+      endT = "09:15";
+      dateObj = new Date();
+    }
+    //EXPERIMENTAL
+    if (today > 21) {
+      endT = "09:15";
+      dateObj = new Date();
+      month = dateObj.getMonth() + 1; //months from 1-12
+      day = dateObj.getDate() + 1;
+
+      year = dateObj.getFullYear();
+      currentDate = year + "-" + month + "-" + day;
     }
 
-    /*This will scan through calendar and find soonest available time 10 minutes from now (rounded up) */
-    function createCheckBusyRequest(date) {
-      roundedDate = getRoundedDate(15, date);
+    date = {
+      value: currentDate,
+    };
+    startTime = {
+      value: startX,
+    };
+    endTime = {
+      value: endT,
+    };
 
-      //This is the 30 minute window, startT and endT
-      startT = roundedDate.toLocaleTimeString("en-US", {
-        hour12: false,
-        hour: "numeric",
-        minute: "numeric",
-      });
-      var endT = new Date(
-        roundedDate.setMinutes(roundedDate.getMinutes() + 30)
-      ).toLocaleTimeString("en-US", {
-        hour12: false,
-        hour: "numeric",
-        minute: "numeric",
-      });
-
-      var today = date.getHours();
-      if (today < 9) {
-        startT = "09:00";
-        endT = "09:30";
-      }
-      //EXPERIMENTAL
-      if (today > 21) {
-        startT = "09:00";
-        endT = "09:30";
-        date.setDate(date.getDate() + 1);
-      }
-
-      date = {
-        value: currentDate,
-      };
-      startTime = {
-        value: startT,
-      };
-      endTime = {
-        value: endT,
-      };
-
-      //Create the time window object for the checkBusy request
-      timeWindowObj = {
-        timeMin: date.value + "T" + startTime.value + ":00" + GMTOffset,
-        timeMax: date.value + "T" + endTime.value + ":00" + GMTOffset,
-        items: [
-          {
-            id: calendarId,
-          },
-        ],
+    //Create an event object for the event request
+    eventObj = {
+      id: rnd(55),
+      //So the reason why it's not filling in that gap is because of here
+      end: {
+        dateTime: date.value + "T" + endTime.value + ":00" + GMTOffset,
         timeZone: timezone,
-      };
-      console.log("scanning");
+      },
+      start: {
+        dateTime: date.value + "T" + startTime.value + ":00" + GMTOffset,
+        timeZone: timezone,
+      },
+      summary: tabTitle,
+      description: tabUrl,
+    };
+
+    reminderDate = new Date(eventObj.start.dateTime);
+
+    var eventRequestX = {
+      method: "POST",
+      async: true,
+      headers: {
+        Authorization: "Bearer " + token,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(eventObj),
+    };
+    return [eventRequestX, reminderDate];
+  }
+
+  while (busyOrNah != 0) {
+    var i = 0;
+
+    i++;
+    changeDate = new Date();
+    changeDate.setMinutes(changeDate.getMinutes() + x);
+    x = x + 10;
+
+    var [checkBusyRequest, startT] = createCheckBusyRequest(changeDate);
+
+    busyOrNah = await checkCalendar();
+    if (busyOrNah == 0) {
       console.log(timeWindowObj);
-      var checkBusyRequest = {
-        method: "POST",
-        async: true,
-        headers: {
-          Authorization: "Bearer " + token,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(timeWindowObj),
-      };
+      [eventRequest, reminderDate] = createEventRequest(changeDate, startT);
+      //console.log(reminderDate);
+      var create = await createEvent();
 
-      return [checkBusyRequest, startT];
+      console.log("breaking");
+      break;
     }
-    //This will take the start time (10 minutes from now rounded up) and create a 15 minute event
-    //Not sure why events aren't stacked anymore
+    console.log("busy or nah: %d", busyOrNah);
+  }
+  console.log("escaped the matrics");
+  console.log(reminderDate);
 
-    function createEventRequest(date, startT) {
-      //Set up some date data
-      var today = date.getHours();
-      roundedDate = getRoundedDate(15, date);
-      //This is the 15 minute event, startT and endT
-      var startX = startT;
-
-      var endT = new Date(
-        roundedDate.setMinutes(roundedDate.getMinutes() + 15)
-      ).toLocaleTimeString("en-US", {
-        hour12: false,
-        hour: "numeric",
-        minute: "numeric",
-      });
-
-      if (date.getHours() < 9) {
-        endT = "09:15";
-      }
-      //EXPERIMENTAL
-      if (today > 21) {
-        endT = "09:30";
-        date.set(date.getDate() + 1);
-      }
-
-      date = {
-        value: currentDate,
-      };
-      startTime = {
-        value: startX,
-      };
-      endTime = {
-        value: endT,
-      };
-
-      //Create an event object for the event request
-      eventObj = {
-        id: uuidv4(),
-        //So the reason why it's not filling in that gap is because of here
-        end: {
-          dateTime: date.value + "T" + endTime.value + ":00" + GMTOffset,
-          timeZone: timezone,
-        },
-        start: {
-          dateTime: date.value + "T" + startTime.value + ":00" + GMTOffset,
-          timeZone: timezone,
-        },
-        summary: tabTitle,
-        description: tabUrl,
-      };
-      console.log(eventObj);
-      reminderDate = new Date(eventObj.start.dateTime);
-
-      var eventRequestX = {
-        method: "POST",
-        async: true,
-        headers: {
-          Authorization: "Bearer " + token,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(eventObj),
-      };
-      return [eventRequestX, reminderDate];
-    }
-
-    while (busyOrNah != 0) {
-      var i = 0;
-      console.log(i);
-      i++;
-      changeDate = new Date();
-      changeDate.setMinutes(changeDate.getMinutes() + x);
-      x = x + 10;
-
-      var [checkBusyRequest, startT] = createCheckBusyRequest(changeDate);
-
-      busyOrNah = await checkCalendar();
-      if (busyOrNah == 0) {
-        console.log(timeWindowObj);
-        [eventRequest, reminderDate] = createEventRequest(changeDate, startT);
-        //console.log(reminderDate);
-        var create = await createEvent();
-        console.log("breaking");
-        break;
-      }
-      console.log("busy or nah: %d", busyOrNah);
-    }
-    console.log("escaped the matrics");
-    //console.log(reminderDate);
-
-    pondrAwaySetTime(reminderDate.toUTCString(), tabUrl, tabId, eventObj.id);
-  });
+  pondrAwaySetTime(reminderDate.toUTCString(), tabUrl, eventObj.id, tabTitle);
+  console.log(reminderDate.toUTCString());
+  return reminderDate.toUTCString();
 }
-function pondrAwaySetTime(gcalDate, tabUrl, tabId, id) {
+function pondrAwaySetTime(gcalDate, tabUrl, id, tabTitle) {
   //Grabs the current tab
   var isGcal = true;
   var timeSelection = id;
@@ -701,7 +727,7 @@ function pondrAwaySetTime(gcalDate, tabUrl, tabId, id) {
   var tabArray = [];
 
   //Grab array of all tabs from storage
-  chrome.storage.sync.get("allTabsArray", function (result) {
+  chrome.storage.local.get("allTabsArray", function (result) {
     //If the array is empty, will be undefined, so assign it to be empty instead
     if (result.allTabsArray === undefined) {
       result.allTabsArray = [];
@@ -710,9 +736,7 @@ function pondrAwaySetTime(gcalDate, tabUrl, tabId, id) {
     Date.now().toString();
     //Save and reformat date
     var savedDate = gcalDate;
-
-    console.log("WEE WOOO %s", id);
-
+    console.log("reeeeeeeeeeeeeeeeeeeeeeeeeeee");
     console.log(savedDate);
     //Store url, date, and the time they wanted to be reminded again
     var uuid = uuidv4();
@@ -723,13 +747,37 @@ function pondrAwaySetTime(gcalDate, tabUrl, tabId, id) {
       savedDate,
       timeSelection,
       false,
-      isGcal
+      isGcal,
+      tabTitle
     );
-
+    console.log("heeeeeeeeeeeeeeeeeeeee");
+    console.log(tabInfo);
     tabArray = result.allTabsArray;
     tabArray.push(tabInfo);
-    chrome.storage.sync.set({ allTabsArray: tabArray });
+    chrome.storage.local.set({ allTabsArray: tabArray });
     //Close the tab
-    //chrome.tabs.remove(tabId, function () {});
+    //chrome.tabs.remove(id, function () {});
   });
 }
+
+const rnd = (() => {
+  const gen = (min, max) =>
+    max++ && [...Array(max - min)].map((s, i) => String.fromCharCode(min + i));
+
+  const sets = {
+    num: gen(48, 57),
+    alphaLower: gen(97, 118),
+  };
+
+  function* iter(len, set) {
+    if (set.length < 1) set = Object.values(sets).flat();
+    for (let i = 0; i < len; i++) yield set[(Math.random() * set.length) | 0];
+  }
+
+  return Object.assign(
+    (len, ...set) => [...iter(len, set.flat())].join(""),
+    sets
+  );
+})();
+
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));

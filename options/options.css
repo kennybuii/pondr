@@ -1,7 +1,12 @@
 @import url("https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap");
+
+* {
+  font-family: "Poppins";
+}
 
 .logo-text {
-  font-family: "Darker Grotesque";
+  font-family: "Poppins";
   font-weight: 700;
   font-size: 32px;
 }

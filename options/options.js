@@ -1,22 +1,39 @@
 document.addEventListener("DOMContentLoaded", function () {
   var select = document.getElementById("tab_history");
-  chrome.storage.sync.get("allTabsArray", function (result) {
+  chrome.storage.local.get("allTabsArray", function (result) {
     console.log("here we have", result.allTabsArray);
 
     for (var i = 0; i < result.allTabsArray.length; i++) {
       //grabbing website name
       var urlName = result.allTabsArray[i].tabUrl;
+      var urlTitle = result.allTabsArray[i].tabTitle;
 
-      var urlElement = document.createElement("option");
-      urlElement.textContent = urlName;
+      var div = document.createElement("span");
+      var urlElement = document.createElement("p");
+      var urlElementLink = document.createElement("a");
+
+      urlElement.textContent = urlTitle;
       urlElement.value = urlName;
+
+      urlElementLink.href = urlName;
+      urlElementLink.innerHTML = urlName;
 
       //grabbing date associated with it + 1
       var date = result.allTabsArray[i].tabDate;
-      console.log(date);
-      urlElement.textContent += date;
+      var newDate = new Date(date);
+      console.log(newDate.toLocaleString("en-US", { hour12: true }));
+      //console.log(date);
 
-      select.appendChild(urlElement);
+      urlElement.textContent +=
+        " " +
+        newDate.toLocaleString("en-US", {
+          hour12: true,
+        });
+
+      div.appendChild(urlElementLink);
+      div.appendChild(urlElement);
+
+      select.appendChild(div);
     }
   });
 
@@ -24,8 +41,8 @@ document.addEventListener("DOMContentLoaded", function () {
     window.location.reload();
   }
   function clear_history() {
-    chrome.storage.sync.get("allTabsArray", function (result) {
-      chrome.storage.sync.set({ allTabsArray: [] }, function () {
+    chrome.storage.local.get("allTabsArray", function (result) {
+      chrome.storage.local.set({ allTabsArray: [] }, function () {
         console.log(
           "whats left:",
           result.allTabsArray + " " + result.allTabsArray.length

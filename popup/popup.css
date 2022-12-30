@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap");
 body {
   background: none;
 }
@@ -28,7 +29,7 @@ body {
   color: rgb(255, 255, 255);
   border-style: none;
   border-radius: 20px;
-  font-family: "Darker Grotesque";
-  font-size: 22px;
-  font-weight: 700;
+  font-family: "Poppins";
+  font-size: 18px;
+  font-weight: 300;
 }
