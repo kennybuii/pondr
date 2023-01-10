@@ -1,198 +1,85 @@
 import { TabInfo } from "./tabinfo.js";
 import { luxon } from "./scripts/luxon.min.js";
 import { v4 as uuidv4 } from "./node_modules/uuid/dist/esm-browser/v4.js";
-/**temp */
-//to keep service worker awake
+
+//To keep service worker awake
 chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
   console.log("wake me up");
 });
 
-var notificationArray = [];
-
+//Create periodic alarm
 chrome.runtime.onInstalled.addListener(() => {
   console.log("welcome to background.js");
 
   chrome.alarms.get("alarm", (a) => {
     if (!a) {
-      chrome.alarms.create("alarm", { delayInMinutes: 1, periodInMinutes: 1 });
+      chrome.alarms.create("alarm", { periodInMinutes: 1 });
     }
   });
 });
 
-chrome.runtime.onConnect.addListener((port) => {
-  port.onMessage.addListener((msg) => {
-    console.log("got a msg");
-  });
-});
-
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-  sendResponse("pong");
-  var tabId = JSON.parse(request).tabId;
-  var tabUrl = JSON.parse(request).tabUrl;
-  var tabTitle = JSON.parse(request).tabTitle;
-  console.log(JSON.parse(request));
-  //Chrome's Identity API let's us make an OAuth request
-  chrome.identity.getAuthToken({ interactive: true }, async function (token) {
-    var ken = await gcal(tabUrl, tabTitle, token);
-    console.log(ken);
-  });
-  //console.log(tabId + " " + tabUrl + " " + tabTitle);
-});
-
-chrome.alarms.onAlarm.addListener((a) => {
+//Check for any expired tabs
+chrome.alarms.onAlarm.addListener(() => {
   const currentDate = new Date();
   console.log(
     "Checking if there's anything to pop..." + currentDate.toLocaleString()
   );
 
-  //need a flag to check if we've reminded once or not
   chrome.storage.local.get("allTabsArray", function (result) {
     if (result.allTabsArray === undefined) {
       console.log("No current tabs to pop");
     } else {
-      //save all the indexes of expired tabs
       var expiredTabIndices = [];
 
       for (var i = 0; i < result.allTabsArray.length; i++) {
-        //grabbing website name
-        var urlName = result.allTabsArray[i].tabUrl;
-        //console.log("TAB URL: %s", urlName);
-
-        //grabbing date associated with it + 1
-        var storageDate = result.allTabsArray[i].tabDate;
-
-        //get current time
-        const currentDate = new Date().toUTCString();
-
-        var x = Date.parse(currentDate);
-        var y = Date.parse(storageDate);
-        // console.log(currentDate);
-        // console.log(storageDate);
-        if (x > y) {
+        var storageDate = Date.parse(result.allTabsArray[i].tabDate);
+        const currentDate = Date.parse(new Date().toUTCString());
+        //Storage date is expired
+        if (currentDate > storageDate) {
           console.log("Found an expired tab!");
           expiredTabIndices.push(i);
-          //check if there are any things to pop
         }
       }
-      //check isCreated from storage
-
-      //if undefined then create one and assign it to false
+      //No expired tabs
       if (expiredTabIndices.length === 0) {
-        //do nothing since empty
         console.log("Found nothing to pop.");
-      } else {
-        //else if isCreated == false, alert and set it to true
-        //store in storage
+      }
+      //Store expired tabs array
+      else {
         console.log("Found %d index(es) to pop.", expiredTabIndices.length);
         chrome.storage.local.set({ expiredTabArray: expiredTabIndices });
-
-        //After we found all indices (if any) associated to expired tabs, call alert()
         alert();
       }
     }
   });
 });
 
+//Create and display alert notification
 async function alert() {
   console.log("Alert getting created");
-  var result = await getExpiredIndices();
-  var numberOfExpiredTabs = result.expiredTabArray.length;
-  //new idea, when tabs are created, push notificationid into an array. before creating next noitification, go thru array and clear all notifications.
-  notificationArray = await getNotificationArray();
-  var id = uuidv4();
-  //console.log(notificationArray);
-  if (notificationArray === undefined) {
-    notificationArray = [];
-  }
-  for (var i = 0; i < notificationArray.length; i++) {
-    chrome.notifications.clear(notificationArray[i]);
-    //console.log("cleared %s", notificationArray[i]);
-  }
-  notificationArray = [];
-  //console.log(notificationArray);
-  var msg = `Ta daa! Your tab(s) are ready.`;
-  chrome.notifications.create(
-    id,
-    {
-      type: "basic",
-      iconUrl: "assets/icons/pondr_128.png",
-      title: "Pondr",
-      message: msg,
-      priority: 1,
-      requireInteraction: true,
-      buttons: [
-        {
-          //get indexes from storage pop them when user re-opens tabs
-          title: "Open",
-        },
-        {
-          title: "Later",
-          //get indexes, shift all times, pop them since they are no longer in the outdated subarray
-        },
-      ],
-    },
-    function () {
-      //console.log("CREATED!");
-      notificationArray.push(id);
-      chrome.storage.local.set({ notificationArray: notificationArray });
-    }
-  );
-}
-async function getNotificationArray() {
-  //check
-  var expiredIndices;
-  async function getLocalStorageValue(key) {
-    return new Promise((resolve, reject) => {
-      try {
-        chrome.storage.local.get(key, function (value) {
-          resolve(value);
-        });
-      } catch (ex) {
-        reject(ex);
-      }
-    });
-  }
-  const result = await getLocalStorageValue("notificationArray");
 
-  return result.notificationArray;
+  chrome.notifications.clear("potato", function () {});
+  chrome.notifications.create("potato", {
+    type: "basic",
+    iconUrl: "assets/icons/pondr_128.png",
+    title: "Pondr",
+    message: "Ta daa! Your tab(s) are ready.",
+    priority: 1,
+    requireInteraction: true,
+    buttons: [
+      {
+        title: "Open",
+      },
+      {
+        title: "Later",
+      },
+    ],
+  });
 }
 
-async function getExpiredIndices() {
-  //check
-  var expiredIndices;
-  async function getLocalStorageValue(key) {
-    return new Promise((resolve, reject) => {
-      try {
-        chrome.storage.local.get(key, function (value) {
-          resolve(value);
-        });
-      } catch (ex) {
-        reject(ex);
-      }
-    });
-  }
-  const result = await getLocalStorageValue("expiredTabArray");
-
-  return result;
-}
-
-async function getAllTabsArray() {
-  async function getLocalStorageValue(key) {
-    return new Promise((resolve, reject) => {
-      try {
-        chrome.storage.local.get(key, function (value) {
-          resolve(value);
-        });
-      } catch (ex) {
-        reject(ex);
-      }
-    });
-  }
-  const result = await getLocalStorageValue("allTabsArray");
-  return result;
-}
+//Notifications popup options
 chrome.notifications.onButtonClicked.addListener(async function (
-  notifId,
+  notificationId,
   btnIdx
 ) {
   var result1 = await getExpiredIndices();
@@ -200,15 +87,16 @@ chrome.notifications.onButtonClicked.addListener(async function (
   var expiredTabArray = await result1.expiredTabArray;
   var allTabsArray = await result2.allTabsArray;
 
+  //If user hit open
   if (btnIdx === 0) {
-    //if yes open tabs
-    console.log("hit yes");
+    console.log("OPEN");
     console.log("Before popping allTabsArray: ", allTabsArray);
     console.log("Before popping expiredTabsArray: ", expiredTabArray);
     openTabsNow(expiredTabArray, allTabsArray);
-  } else if (btnIdx === 1) {
-    console.log("hit later");
-
+  }
+  //If user hit later
+  else if (btnIdx === 1) {
+    console.log("LATER");
     console.log("Before popping allTabsArray: ", allTabsArray);
     console.log("Before popping expiredTabsArray: ", expiredTabArray);
     openTabsLater(expiredTabArray, allTabsArray);
@@ -217,10 +105,34 @@ chrome.notifications.onButtonClicked.addListener(async function (
   }
 });
 
+async function openTabsNow(expiredTabArray, allTabsArray) {
+  var expiredTabLength = expiredTabArray.length;
+  var allTabsArrayLength = allTabsArray.length;
+  for (var i = expiredTabLength; i >= 0; i--) {
+    //open the tabs
+    for (var j = allTabsArrayLength; j >= 0; j--) {
+      if (j === expiredTabArray[i]) {
+        console.log("Popping at %d", j);
+        //open tab
+        chrome.tabs.create({ url: allTabsArray[j].tabUrl });
+        allTabsArray.splice(j, 1);
+        chrome.storage.local.set({ allTabsArray: allTabsArray });
+      }
+    }
+
+    expiredTabArray.splice(i, 1);
+  }
+  chrome.storage.local.set({ expiredTabArray: expiredTabArray });
+
+  var result = await getAllTabsArray();
+  var result1 = await getExpiredIndices();
+  console.log("After popping, allTabsArray: ", result.allTabsArray);
+  console.log("After popping, expiresTabArray: ", result1.expiredTabArray);
+}
+
 async function openTabsLater(expiredTabArray, allTabsArray) {
   var expiredTabLength = expiredTabArray.length;
   var allTabsArrayLength = allTabsArray.length;
-  var test = "";
   for (var i = expiredTabLength; i >= 0; i--) {
     //open the tabs
     for (var j = allTabsArrayLength; j >= 0; j--) {
@@ -236,7 +148,6 @@ async function openTabsLater(expiredTabArray, allTabsArray) {
 
           chrome.storage.local.set({ allTabsArray: allTabsArray });
         } else if (allTabsArray[j].isGcal == true) {
-          //await delay(3000);
           console.log("xDXDXDXD");
           console.log(allTabsArray[j]);
           var id = allTabsArray[j].timeSelection;
@@ -271,6 +182,56 @@ async function openTabsLater(expiredTabArray, allTabsArray) {
   console.log("After popping, allTabsArray: ", result.allTabsArray);
   console.log("After popping, expiresTabArray: ", result1.expiredTabArray);
 }
+
+//Helper function: returns array of expired tab indices
+async function getExpiredIndices() {
+  async function getLocalStorageValue(key) {
+    return new Promise((resolve, reject) => {
+      try {
+        chrome.storage.local.get(key, function (value) {
+          resolve(value);
+        });
+      } catch (ex) {
+        reject(ex);
+      }
+    });
+  }
+  const result = await getLocalStorageValue("expiredTabArray");
+
+  return result;
+}
+//Helper function: returns array of all tabs
+async function getAllTabsArray() {
+  async function getLocalStorageValue(key) {
+    return new Promise((resolve, reject) => {
+      try {
+        chrome.storage.local.get(key, function (value) {
+          resolve(value);
+        });
+      } catch (ex) {
+        reject(ex);
+      }
+    });
+  }
+  const result = await getLocalStorageValue("allTabsArray");
+  return result;
+}
+
+/*GOOGLE CALENDAR FUNCTIONALITY BELOW */
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+  sendResponse("pong");
+  var tabId = JSON.parse(request).tabId;
+  var tabUrl = JSON.parse(request).tabUrl;
+  var tabTitle = JSON.parse(request).tabTitle;
+  console.log(JSON.parse(request));
+
+  //Chrome's Identity API let's us make an OAuth request
+  chrome.identity.getAuthToken({ interactive: true }, async function (token) {
+    var ken = await gcal(tabUrl, tabTitle, token);
+    console.log(ken);
+  });
+});
 
 async function getEvent(id, token, callback) {
   var eventId = id;
@@ -336,30 +297,6 @@ async function delEvent(id, token) {
     });
   }
   await deleteEvent(eventId);
-}
-async function openTabsNow(expiredTabArray, allTabsArray) {
-  var expiredTabLength = expiredTabArray.length;
-  var allTabsArrayLength = allTabsArray.length;
-  for (var i = expiredTabLength; i >= 0; i--) {
-    //open the tabs
-    for (var j = allTabsArrayLength; j >= 0; j--) {
-      if (j === expiredTabArray[i]) {
-        console.log("Popping at %d", j);
-        //open tab
-        chrome.tabs.create({ url: allTabsArray[j].tabUrl });
-        allTabsArray.splice(j, 1);
-        chrome.storage.local.set({ allTabsArray: allTabsArray });
-      }
-    }
-
-    expiredTabArray.splice(i, 1);
-  }
-  chrome.storage.local.set({ expiredTabArray: expiredTabArray });
-
-  var result = await getAllTabsArray();
-  var result1 = await getExpiredIndices();
-  console.log("After popping, allTabsArray: ", result.allTabsArray);
-  console.log("After popping, expiresTabArray: ", result1.expiredTabArray);
 }
 
 //**GOING TO HAVE TO MAKE CHANGES FOR  THIS FUNCTION AT SOME POINT */
@@ -473,7 +410,7 @@ async function gcal(tabUrl, tabTitle, token) {
   var day = dateObj.getDate();
 
   var year = dateObj.getFullYear();
-  var currentDate = year + "-" + month + "-" + day;
+  var currentDate = year + "-0" + month + "-" + day;
 
   /*We use Google's checkBusy API to check a current timeslot, therefore we need the start and end of that time block */
   var start = roundedDate.toLocaleTimeString("en-US", {
@@ -579,7 +516,7 @@ async function gcal(tabUrl, tabTitle, token) {
       day = dateObj.getDate() + 1;
 
       year = dateObj.getFullYear();
-      currentDate = year + "-" + month + "-" + day;
+      currentDate = year + "-0" + month + "-" + day;
     }
 
     date = {
@@ -647,7 +584,7 @@ async function gcal(tabUrl, tabTitle, token) {
       day = dateObj.getDate() + 1;
 
       year = dateObj.getFullYear();
-      currentDate = year + "-" + month + "-" + day;
+      currentDate = year + "-0" + month + "-" + day;
     }
 
     date = {
@@ -675,6 +612,10 @@ async function gcal(tabUrl, tabTitle, token) {
       summary: tabTitle,
       description: tabUrl,
     };
+
+    console.log(eventObj.start.dateTime);
+    console.log(Date.parse(eventObj.start.dateTime));
+    console.log(Date.parse("2023-01-2T21:15:00-08:00"));
 
     reminderDate = new Date(eventObj.start.dateTime);
 
